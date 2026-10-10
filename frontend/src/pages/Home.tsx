@@ -1,0 +1,27 @@
+import { useEffect, useState } from 'react'
+import { ArrowUpRight, Flame, LockKeyhole, RefreshCw, X } from 'lucide-react'
+import { mockProfile, mockStreaks } from '../data/mockData'
+import type { Quest, QuestPeriod } from '../domain'
+import { questService } from '../services/questService'
+import { QuestCard } from '../components/QuestCard'
+
+const sections: { period: QuestPeriod; label: string; kicker: string }[] = [
+  { period: 'daily', label: 'Little adventures', kicker: 'Today' }, { period: 'weekly', label: 'Break the routine', kicker: 'This week' }, { period: 'monthly', label: 'Bucket-list moments', kicker: 'This month' },
+]
+
+export function Home() {
+  const [quests, setQuests] = useState<Quest[]>([]); const [selected, setSelected] = useState<Quest | null>(null)
+  useEffect(() => { questService.getAvailableQuests().then(setQuests) }, [])
+  const progress = Math.round((mockProfile.xp / mockProfile.nextLevelXp) * 100)
+  return <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8 md:px-12 md:py-10">
+    <header className="mb-9 flex items-center justify-between"><div><p className="mb-1 text-sm font-semibold text-[#8d9187]">Saturday, October 10</p><h1 className="display text-4xl sm:text-5xl">Hey, {mockProfile.name} <span aria-hidden>✦</span></h1></div><div className="grid h-12 w-12 place-items-center rounded-full bg-[#20231f] font-bold text-[#ffdb65]">{mockProfile.avatar}</div></header>
+    <section className="mb-10 grid gap-4 rounded-[2rem] bg-[#20231f] p-6 text-white shadow-xl shadow-black/10 sm:grid-cols-[1fr_auto] sm:p-8"><div><div className="mb-5 flex items-center justify-between gap-4"><div><p className="mb-1 text-xs font-bold uppercase tracking-[.18em] text-[#ffdb65]">Adventure level</p><p className="display text-4xl">Level {mockProfile.level}</p></div><span className="rounded-full bg-white/10 px-3 py-2 text-xs font-semibold">{mockProfile.xp} / {mockProfile.nextLevelXp} XP</span></div><div className="h-2 overflow-hidden rounded-full bg-white/15"><div className="h-full rounded-full bg-[#ffdb65]" style={{ width: `${progress}%` }} /></div><p className="mt-3 text-sm text-white/55">{mockProfile.nextLevelXp - mockProfile.xp} XP until your next unlock</p></div><div className="hidden items-center justify-center rounded-3xl bg-[#ffdb65] px-8 text-center text-[#20231f] sm:flex"><Flame size={34} className="mb-1" /><span className="font-black">Keep<br />exploring</span></div></section>
+    <section className="mb-12 grid grid-cols-3 gap-3"><Streak label="Daily" value={mockStreaks.daily} color="bg-[#ffdb65]" /><Streak label="Weekly" value={mockStreaks.weekly} color="bg-[#bfe7c8]" /><Streak label="Monthly" value={mockStreaks.monthly} color="bg-[#d8ccff]" /></section>
+    <div className="flex items-end justify-between"><div><p className="mb-1 text-xs font-bold uppercase tracking-[.18em] text-[#8d9187]">Your board</p><h2 className="display text-3xl sm:text-4xl">Choose your next adventure</h2></div><button className="hidden items-center gap-1 text-sm font-bold text-[#777b72] sm:flex">How it works <ArrowUpRight size={16} /></button></div>
+    <div className="mt-7 space-y-12">{sections.map(section => <section key={section.period}><div className="mb-4 flex items-center justify-between"><div><h3 className="text-lg font-extrabold">{section.label}</h3><p className="text-sm text-[#8d9187]">{section.kicker} · Pick one to get started</p></div><button className="rounded-full border border-black/10 p-2 text-[#8d9187]" aria-label="Reroll quests"><RefreshCw size={16} /></button></div><div className="grid gap-4 md:grid-cols-3">{quests.filter(q => q.period === section.period).map(q => <QuestCard key={q.id} quest={q} onSelect={setSelected} />)}</div></section>)}</div>
+    {selected && <QuestModal quest={selected} onClose={() => setSelected(null)} />}
+  </div>
+}
+
+function Streak({ label, value, color }: { label: string; value: number; color: string }) { return <div className="rounded-3xl bg-white/75 p-4 shadow-sm sm:p-5"><div className={`mb-5 grid h-8 w-8 place-items-center rounded-xl ${color}`}><Flame size={16} /></div><p className="text-xs font-bold uppercase tracking-wider text-[#8d9187]">{label}</p><p className="display mt-1 text-3xl">{value}<span className="ml-1 font-sans text-sm font-bold text-[#8d9187]">days</span></p></div> }
+function QuestModal({ quest, onClose }: { quest: Quest; onClose: () => void }) { return <div className="fixed inset-0 z-30 grid place-items-end bg-black/35 p-4 sm:place-items-center"><div className={`quest-card ${quest.accent} relative w-full max-w-lg rounded-[2rem] p-7 shadow-2xl`} role="dialog" aria-modal="true"><button onClick={onClose} className="absolute right-5 top-5 rounded-full bg-white/60 p-2" aria-label="Close quest details"><X size={18} /></button><p className="mb-12 text-xs font-bold uppercase tracking-[.18em]">{quest.category} · {quest.rarity}</p><h2 className="display mb-3 pr-8 text-4xl">{quest.title}</h2><p className="mb-8 leading-6 text-black/65">{quest.description}</p><div className="mb-6 flex justify-between border-t border-black/10 pt-5 text-sm font-bold"><span>{quest.xp} XP</span><span>{quest.deadline}</span></div><button onClick={onClose} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#20231f] py-4 font-bold text-white">Select quest <ArrowUpRight size={17} /></button><p className="mt-3 flex items-center justify-center gap-1 text-center text-xs text-black/45"><LockKeyhole size={12} />Selection will connect to the quest service later</p></div></div> }
