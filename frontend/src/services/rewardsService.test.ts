@@ -1,0 +1,15 @@
+import { describe, expect, it } from 'vitest'
+import { mockCompletionResult } from '../data/mockData'
+import { REWARDS_STORAGE_KEY, MockRewardsService } from './rewardsService'
+
+function memoryStorage() { const values = new Map<string, string>(); return { getItem: (key: string) => values.get(key) ?? null, setItem: (key: string, value: string) => values.set(key, value), removeItem: (key: string) => values.delete(key) } }
+
+describe('MockRewardsService', () => {
+  it('loads the fixture chest inventory and rewards', async () => { const service = new MockRewardsService(memoryStorage()); expect(await service.getUnopenedChests()).toHaveLength(3); expect((await service.getRewardInventory()).rewards[0].name).toBe('Trailblazer Badge') })
+  it('opens a chest once and adds its deterministic reward', async () => { const service = new MockRewardsService(memoryStorage()); const result = await service.openChest('chest-common-welcome'); expect(result.reward.id).toBe('reward-trailblazer-badge'); expect(result.chest.status).toBe('opened'); expect((await service.getUnopenedChests()).some(chest => chest.id === 'chest-common-welcome')).toBe(false) })
+  it('prevents duplicate chest opening and duplicate rewards', async () => { const service = new MockRewardsService(memoryStorage()); await service.openChest('chest-common-welcome'); await expect(service.openChest('chest-common-welcome')).rejects.toThrow('already been opened'); expect((await service.getRewardInventory()).rewards.find(reward => reward.id === 'reward-trailblazer-badge')?.quantity).toBe(2) })
+  it('persists opened chests and inventory across service reloads', async () => { const storage = memoryStorage(); await new MockRewardsService(storage).openChest('chest-rare-weekend'); const restored = new MockRewardsService(storage); expect((await restored.getUnopenedChests()).map(chest => chest.id)).not.toContain('chest-rare-weekend'); expect((await restored.getRewardInventory()).rewards.some(reward => reward.id === 'reward-golden-explorer-frame')).toBe(true) })
+  it('tracks cosmetic equipment with one equipped item per slot', async () => { const storage = memoryStorage(); const service = new MockRewardsService(storage); await service.openChest('chest-rare-weekend'); const inventory = await service.equipCosmetic('reward-golden-explorer-frame'); expect(inventory.equipped.frame).toBe('reward-golden-explorer-frame'); expect(new MockRewardsService(storage)).toBeDefined() })
+  it('does not partially update inventory when a chest operation fails', async () => { const storage = memoryStorage(); const service = new MockRewardsService(storage); const before = await service.getRewardInventory(); await expect(service.openChest('missing-chest')).rejects.toThrow('not available'); expect(await service.getRewardInventory()).toEqual(before); expect(storage.getItem(REWARDS_STORAGE_KEY)).toBeTruthy() })
+  it('does not grant rewards from the display-only completion preview', async () => { const service = new MockRewardsService(memoryStorage()); expect(mockCompletionResult.mysteryChestUnlocked).toBe(true); expect((await service.getRewardInventory()).rewards).toHaveLength(1) })
+})

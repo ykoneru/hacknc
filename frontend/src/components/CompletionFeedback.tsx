@@ -1,0 +1,8 @@
+import { Check, Gift, Sparkles, TrendingUp } from 'lucide-react'
+import type { CompletionResult } from '../domain'
+
+export function CompletionFeedback({ result }: { result: CompletionResult }) {
+  return <article className="completion-feedback rounded-[2rem] border border-[#bfe7c8] bg-[#f0faef] p-6 shadow-sm" aria-label="Quest completion result"><div className="mb-5 flex items-start justify-between"><div className="grid h-11 w-11 place-items-center rounded-2xl bg-[#bfe7c8] text-[#28643b]"><Check size={23} /></div>{result.mysteryChestUnlocked && <span className="flex items-center gap-1 rounded-full bg-[#ffdb65] px-3 py-2 text-xs font-black"><Gift size={14} /> Chest unlocked</span>}</div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#28643b]">Quest complete</p><h2 className="display mt-1 text-3xl">{result.questTitle}</h2><div className="mt-5 grid gap-3 sm:grid-cols-3"><Stat icon={<Sparkles size={15} />} label="XP earned" value={`+${result.xpEarned}`} /><Stat icon={<TrendingUp size={15} />} label="Streak" value={`${result.updatedStreak} days`} /><Stat icon={<span className="text-xs">LVL</span>} label="Adventure" value={result.leveledUp ? `Level ${result.level.level}!` : `Level ${result.level.level}`} /></div>{result.leveledUp && <p className="mt-5 rounded-2xl bg-white/70 px-4 py-3 text-sm font-bold text-[#28643b]">You leveled up! A new adventure tier is ready.</p>}</article>
+}
+
+function Stat({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) { return <div className="rounded-2xl bg-white/70 p-3"><div className="mb-2 flex items-center gap-1 text-[#28643b]">{icon}<span className="text-[10px] font-black uppercase tracking-wider">{label}</span></div><p className="font-black">{value}</p></div> }
